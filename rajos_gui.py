@@ -508,8 +508,32 @@ Perfect For:
         self.progress.stop()
         self.status_label.config(text="Status: Build finished")
         
+    def check_qemu(self):
+        """Check if QEMU is available and return the path"""
+        import shutil
+        from pathlib import Path
+        
+        qemu_paths = [
+            "qemu-system-arm",  # Standard path
+            "C:\\Program Files\\qemu\\qemu-system-arm.exe"  # Windows path
+        ]
+        
+        for qemu_path in qemu_paths:
+            if shutil.which(qemu_path) or Path(qemu_path).exists():
+                return qemu_path
+        
+        return None
+
     def run_rajos(self):
         """Run RajOS in QEMU"""
+        # Check if QEMU is available
+        qemu_path = self.check_qemu()
+        if not qemu_path:
+            self.log_output("ERROR: QEMU not found!")
+            self.log_output("Please install QEMU from: https://www.qemu.org/download/")
+            self.run_finished()
+            return
+            
         self.log_output("Starting RajOS in QEMU...")
         self.run_btn.config(state=tk.DISABLED)
         self.stop_btn.config(state=tk.NORMAL)
@@ -521,7 +545,7 @@ Perfect For:
             try:
                 # Build QEMU command
                 qemu_cmd = [
-                    "qemu-system-arm",
+                    qemu_path,
                     "-M", self.machine_var.get(),
                     "-cpu", self.cpu_var.get(),
                     "-kernel", "build/rajos.elf",
