@@ -1,13 +1,14 @@
 /*
  * RajOS Linker Script
- * ARM Cortex-M Memory Layout
+ * ARM926EJ-S Memory Layout
  */
 
-/* Memory layout for QEMU versatilepb (Cortex-M3 compatible) */
+/* Memory layout for QEMU versatileab (ARM926EJ-S) */
 MEMORY
 {
     /* Flash memory - where code and constants are stored */
-    FLASH (rx) : ORIGIN = 0x00010000, LENGTH = 256K
+    /* For ARM926 (QEMU versatileab), flash typically starts at 0x00000000 */
+    FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 256K
     
     /* RAM - for variables, stack, and heap */
     RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 64K

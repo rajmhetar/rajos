@@ -25,8 +25,8 @@ class RajOSBuilder:
         
         # Compiler flags
         self.cflags = [
-            "-mcpu=cortex-m3",
-            "-mthumb",
+            "-mcpu=arm926ej-s",
+            "-marm",
             "-mfloat-abi=soft",
             "-fno-common",
             "-ffunction-sections",
@@ -34,7 +34,8 @@ class RajOSBuilder:
             "-Wall",
             "-Wextra",
             "-std=c99",
-            "-Os"
+            "-Os",
+            "-DRAJOS_SEMIHOSTING"
         ]
         
         self.include_dirs = [
@@ -44,10 +45,10 @@ class RajOSBuilder:
             str(self.src_dir / "include" / "drivers")
         ]
         
-        self.asflags = ["-mcpu=cortex-m3", "-mthumb"]
+        self.asflags = ["-mcpu=arm926ej-s"]
         self.ldflags = [
-            "-mcpu=cortex-m3",
-            "-mthumb",
+            "-mcpu=arm926ej-s",
+            "-marm",
             "-nostdlib",
             "-nostartfiles",
             "-Wl,--gc-sections",
@@ -202,8 +203,8 @@ class RajOSBuilder:
         if self.elf_file.exists():
             result = subprocess.run([self.size, str(self.elf_file)], capture_output=True, text=True)
             if result.returncode == 0:
-            print("\nBuild Information:")
-            print(result.stdout)
+                print("\nBuild Information:")
+                print(result.stdout)
         
         print(f"\nOutput files:")
         print(f"   ELF: {self.elf_file}")

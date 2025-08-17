@@ -1,6 +1,6 @@
 /*
  * RajOS Startup Code
- * ARM Cortex-M Assembly
+ * ARM926EJ-S Assembly
  * 
  * This file contains:
  * - Vector table with exception handlers
@@ -9,8 +9,8 @@
  */
 
 .syntax unified
-.cpu cortex-m3
-.thumb
+.cpu arm926ej-s
+.arm
 
 /* Linker symbols defined in linker.ld */
 .extern _stack_top
@@ -25,51 +25,22 @@
 .extern timer_tick_callback
 
 .section .vectors, "a"
-.align 2
+.align 4
 
 /*
- * Vector Table
- * ARM Cortex-M requires this at address 0x00000000
- * First entry: initial stack pointer
- * Second entry: reset handler address  
- * Remaining entries: exception/interrupt handlers
+ * Vector Table for ARM926EJ-S
+ * ARM926 requires this at address 0x00000000
+ * Different format from Cortex-M
  */
 .global vector_table
 vector_table:
-    .word _stack_top              /* 0x00: Initial stack pointer */
-    .word Reset_Handler + 1       /* 0x04: Reset handler (+1 for Thumb mode) */
-    .word NMI_Handler + 1         /* 0x08: Non-maskable interrupt */
-    .word HardFault_Handler + 1   /* 0x0C: Hard fault */
-    .word MemManage_Handler + 1   /* 0x10: Memory management fault */
-    .word BusFault_Handler + 1    /* 0x14: Bus fault */
-    .word UsageFault_Handler + 1  /* 0x18: Usage fault */
-    .word 0                       /* 0x1C: Reserved */
-    .word 0                       /* 0x20: Reserved */
-    .word 0                       /* 0x24: Reserved */
-    .word 0                       /* 0x28: Reserved */
-    .word SVC_Handler + 1         /* 0x2C: Supervisor call */
-    .word DebugMon_Handler + 1    /* 0x30: Debug monitor */
-    .word 0                       /* 0x34: Reserved */
-    .word PendSV_Handler + 1      /* 0x38: PendSV (context switching) */
-    .word SysTick_Handler + 1     /* 0x3C: System tick timer */
-    
-    /* External interrupts (first 16) */
-    .word IRQ_Handler + 1         /* IRQ 0 */
-    .word IRQ_Handler + 1         /* IRQ 1 */
-    .word IRQ_Handler + 1         /* IRQ 2 */
-    .word IRQ_Handler + 1         /* IRQ 3 */
-    .word IRQ_Handler + 1         /* IRQ 4 */
-    .word IRQ_Handler + 1         /* IRQ 5 */
-    .word IRQ_Handler + 1         /* IRQ 6 */
-    .word IRQ_Handler + 1         /* IRQ 7 */
-    .word IRQ_Handler + 1         /* IRQ 8 */
-    .word IRQ_Handler + 1         /* IRQ 9 */
-    .word IRQ_Handler + 1         /* IRQ 10 */
-    .word IRQ_Handler + 1         /* IRQ 11 */
-    .word IRQ_Handler + 1         /* IRQ 12 */
-    .word IRQ_Handler + 1         /* IRQ 13 */
-    .word IRQ_Handler + 1         /* IRQ 14 */
-    .word IRQ_Handler + 1         /* IRQ 15 */
+    ldr pc, =Reset_Handler        /* 0x00: Reset */
+    ldr pc, =Undefined_Handler    /* 0x04: Undefined instruction */
+    ldr pc, =SVC_Handler          /* 0x08: Software interrupt */
+    ldr pc, =Prefetch_Handler     /* 0x0C: Prefetch abort */
+    ldr pc, =Data_Handler         /* 0x10: Data abort */
+    ldr pc, =IRQ_Handler          /* 0x14: IRQ */
+    ldr pc, =FIQ_Handler          /* 0x18: FIQ */
 
 .section .text
 
@@ -82,7 +53,9 @@ vector_table:
 .type Reset_Handler, %function
 Reset_Handler:
     /* Disable interrupts during startup */
-    cpsid i
+    mrs r3, cpsr
+    orr r3, r3, #0xC0    /* Set IRQ and FIQ disable bits */
+    msr cpsr, r3
     
     /* Copy initialized data from flash to RAM */
     ldr r0, =_data_start          /* Destination (RAM) */
@@ -109,12 +82,13 @@ bss_zero_loop:
     b bss_zero_loop
 bss_zero_done:
 
-    /* Set up main stack pointer (already set by hardware, but good practice) */
-    ldr r0, =_stack_top
-    msr msp, r0
+    /* Set up main stack pointer for ARM926 */
+    ldr sp, =_stack_top
     
     /* Enable interrupts */
-    cpsie i
+    mrs r3, cpsr
+    bic r3, r3, #0xC0    /* Clear IRQ and FIQ disable bits */
+    msr cpsr, r3
     
     /* Jump to C kernel main function */
     bl kernel_main
@@ -124,69 +98,37 @@ infinite_loop:
     b infinite_loop
 
 /*
- * Default Exception Handlers
+ * Default Exception Handlers for ARM926
  * These are called when exceptions occur
  * For now, they just loop forever (can be improved later)
  */
 
-.global NMI_Handler
-.type NMI_Handler, %function
-NMI_Handler:
-    b NMI_Handler
-
-.global HardFault_Handler  
-.type HardFault_Handler, %function
-HardFault_Handler:
-    b HardFault_Handler
-
-.global MemManage_Handler
-.type MemManage_Handler, %function  
-MemManage_Handler:
-    b MemManage_Handler
-
-.global BusFault_Handler
-.type BusFault_Handler, %function
-BusFault_Handler:
-    b BusFault_Handler
-
-.global UsageFault_Handler
-.type UsageFault_Handler, %function
-UsageFault_Handler:
-    b UsageFault_Handler
+.global Undefined_Handler
+.type Undefined_Handler, %function
+Undefined_Handler:
+    b Undefined_Handler
 
 .global SVC_Handler
 .type SVC_Handler, %function
 SVC_Handler:
     b SVC_Handler
 
-.global DebugMon_Handler
-.type DebugMon_Handler, %function
-DebugMon_Handler:
-    b DebugMon_Handler
+.global Prefetch_Handler
+.type Prefetch_Handler, %function
+Prefetch_Handler:
+    b Prefetch_Handler
 
-.global PendSV_Handler
-.type PendSV_Handler, %function
-PendSV_Handler:
-    b PendSV_Handler
-
-.global SysTick_Handler
-.type SysTick_Handler, %function
-SysTick_Handler:
-    /* Save registers */
-    push {r0, r1, r2, r3, r12, lr}
-    
-    /* Call timer callback function */
-    bl timer_tick_callback
-    
-    /* Restore registers */
-    pop {r0, r1, r2, r3, r12, lr}
-    
-    /* Return from interrupt */
-    bx lr
+.global Data_Handler
+.type Data_Handler, %function
+Data_Handler:
+    b Data_Handler
 
 .global IRQ_Handler
 .type IRQ_Handler, %function
 IRQ_Handler:
     b IRQ_Handler
 
-.end
+.global FIQ_Handler
+.type FIQ_Handler, %function
+FIQ_Handler:
+    b FIQ_Handler
