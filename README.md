@@ -76,12 +76,6 @@ rajos/
 - **ARM Integration** - Vector table and exception handling
 - **Interactive GUI** - Visual OS showcase and testing interface
 
-## Perfect For
-
-- **Students** learning RTOS concepts
-- **Developers** exploring ARM architecture
-- **Hobbyists** interested in embedded systems
-- **Professionals** demonstrating technical skills
 
 ## Next Steps
 
@@ -91,15 +85,3 @@ After launching the GUI or running the demo, explore:
 3. **Extensions** - Add new features and drivers
 4. **Hardware** - Port to real ARM boards
 
-## GUI Features
-
-The RajOS GUI provides:
-- **Overview** - System introduction and key features
-- **Architecture** - Visual system design diagram
-- **Testing** - Build, run, and test RajOS
-- **Build** - Configure build settings and view process
-- **Output** - Real-time system output monitoring
-
----
-
-**Happy Coding!**
